@@ -232,16 +232,22 @@ different environments, they are not used as evidence.**
     computed from truncated strings.
 - **Normalization (version 1)**, applied in this order:
   1. Replace unpaired UTF-16 surrogates with U+FFFD.
-  2. Remove control characters (Unicode category Cc) that are not whitespace, and the
-     bidirectional formatting characters U+061C, U+200E, U+200F, U+202A–U+202E and
-     U+2066–U+2069.
+  2. Remove three groups of characters:
+     - control characters (Unicode category Cc) that are not whitespace;
+     - the bidirectional formatting characters U+061C, U+200E, U+200F, U+202A–U+202E and
+       U+2066–U+2069;
+     - the invisible characters U+200B (zero width space), U+2060 (word joiner) and
+       U+FEFF (zero width no-break space, also used as a byte-order mark). Names that look
+       identical therefore never differ only because one contains an accidental invisible
+       character.
   3. Replace each run of whitespace (Unicode White_Space, which includes tab, line breaks
      and no-break space) with one space, and trim spaces at both ends.
   4. Apply Unicode NFC. This runs last, because step 2 can bring a base character and a
      combining mark together.
 
-  Case and all other characters are preserved, including zero-width spaces, joiners and
-  byte-order marks.
+  Case and all other characters are preserved. That includes U+200D (zero width joiner),
+  which is part of emoji sequences, and U+200C (zero width non-joiner), which is
+  meaningful in some writing systems.
 - **Identity hash** = SHA-256 over the UTF-8 encoding of `"v1\0" + suite + "\0" + name`,
   as lowercase hexadecimal. Normalized names never contain NUL, so the encoding is
   unambiguous. The CLI and server call the same function, so `check` matches the server's
@@ -1385,7 +1391,7 @@ report structure.
 | Poison reports (crash or OOM loops) | At most 3 attempts, including attempts lost to a dead worker (`worker_lost`); one run per worker at a time | worker |
 | CPU exhaustion | 2-minute parse timeout; bounded regular expressions; a per-run redaction budget that drops text rather than storing it unredacted | worker, `core` |
 | Invalid encoding, NUL bytes, oversized fields | One `sanitizeText(maxLength)` for every untrusted string: report fields *and* upload metadata. Counters and durations are clamped to their column types. | `core`, API |
-| Display spoofing (bidi overrides) | Bidi control characters removed from identities and display strings; the UI also isolates names with `unicode-bidi: isolate` | `core`, `web` |
+| Display spoofing (bidi overrides, invisible characters) | Bidi control characters, zero width spaces, word joiners and byte-order marks are removed from identities and display strings; the UI also isolates names with `unicode-bidi: isolate` | `core`, `web` |
 | XSS through test names, messages or branches | React text rendering only; `dangerouslySetInnerHTML` banned by lint; strict CSP (below) | `web` |
 | `javascript:` links in metadata | `ci.runUrl` accepted only as an absolute `http`/`https` URL of at most 2,048 characters; otherwise dropped with a warning | API |
 | Open redirect after sign-in | `next` must be a same-origin relative path and travels in the signed state cookie (§11.1) | API |

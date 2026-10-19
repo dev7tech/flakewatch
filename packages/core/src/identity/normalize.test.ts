@@ -32,20 +32,30 @@ const REMOVED = [
   '\u0080',
   '\u009F',
   '\u061C',
+  '\u200B',
   '\u200E',
   '\u200F',
   '\u202A',
   '\u202E',
+  '\u2060',
   '\u2066',
   '\u2069',
+  '\uFEFF',
+];
+
+/** Removed although they are neither control nor bidirectional characters. */
+const INVISIBLE: [string, string][] = [
+  ['U+200B zero width space', '\u200B'],
+  ['U+2060 word joiner', '\u2060'],
+  ['U+FEFF zero width no-break space (byte-order mark)', '\uFEFF'],
 ];
 
 /** Characters that exercise every normalization step, plus any code point. */
 const trickyCharacter = fc.oneof(
   fc.constantFrom(...WHITESPACE),
   fc.constantFrom(...REMOVED),
-  // Invisible characters that normalization deliberately keeps.
-  fc.constantFrom('\u200B', '\u200C', '\u200D', '\uFEFF'),
+  // Zero width non-joiner and joiner, which normalization deliberately keeps.
+  fc.constantFrom('\u200C', '\u200D'),
   // Bases and combining marks that NFC composes.
   fc.constantFrom(
     'e',
@@ -82,6 +92,7 @@ const wordCharacter = fc.constantFrom(
   '\u4E2D',
   '\u{1F600}',
   '\u0301',
+  '\u200C',
   '\u200D',
 );
 const word = fc.string({ unit: wordCharacter, minLength: 1, maxLength: 8 });
@@ -111,7 +122,15 @@ describe('normalizeName', () => {
       'isAdmin\u202E\u2066 // check',
       'isAdmin // check',
     ],
-    ['removed characters only', '\u0000\u202E\u200F', ''],
+    ['a zero width space', 'a\u200Bb', 'ab'],
+    ['a word joiner', 'a\u2060b', 'ab'],
+    ['a byte-order mark', '\uFEFFname', 'name'],
+    [
+      'a zero width space between spaces',
+      'applies \u200B discount',
+      'applies discount',
+    ],
+    ['removed characters only', '\u0000\u202E\u200F\u200B\u2060\uFEFF', ''],
     ['a decomposed accent', 'Cafe\u0301', 'Caf\u00E9'],
     ['a canonical singleton', '\u212B', '\u00C5'],
     ['Hangul jamo', '\u1100\u1161', '\uAC00'],
@@ -128,9 +147,13 @@ describe('normalizeName', () => {
     ['compatibility ligatures', '\uFB01le'],
     ['full-width letters', '\uFF21\uFF22'],
     ['superscripts', 'x\u00B2'],
-    ['zero-width spaces', 'a\u200Bb'],
-    ['a leading byte-order mark, which is not White_Space', '\uFEFFname'],
-    ['emoji ZWJ sequences', '\u{1F469}\u200D\u{1F4BB} works'],
+    ['zero width joiners in emoji sequences', '\u{1F469}\u200D\u{1F4BB} works'],
+    ['a family emoji', '\u{1F468}\u200D\u{1F469}\u200D\u{1F467}'],
+    ['an emoji with a variation selector', '\u{1F3F3}\uFE0F\u200D\u{1F308}'],
+    [
+      'zero width non-joiners',
+      '\u0645\u06CC\u200C\u062E\u0648\u0627\u0647\u0645',
+    ],
     [
       'punctuation',
       `it "works" with 'quotes', <tags> & {braces} | :: # % \\ /`,
@@ -145,6 +168,18 @@ describe('normalizeName', () => {
   ])('preserves %s', (_description, input) => {
     expect(normalizeName(input)).toBe(input);
   });
+
+  it.each(INVISIBLE)(
+    'ignores %s inserted at any position',
+    (_description, invisible) => {
+      const name = 'chromium › cart.spec.ts › applies discount';
+      for (let index = 0; index <= name.length; index++) {
+        expect(
+          normalizeName(name.slice(0, index) + invisible + name.slice(index)),
+        ).toBe(name);
+      }
+    },
+  );
 
   it('is idempotent', () => {
     fc.assert(
@@ -163,9 +198,17 @@ describe('normalizeName', () => {
         expect(result.normalize('NFC')).toBe(result);
         expect(result).not.toMatch(/\p{Cc}/v);
         expect(result).not.toMatch(
-          /[\u061C\u200E\u200F\u202A-\u202E\u2066-\u2069]/v,
+          /[\u061C\u200B\u200E\u200F\u202A-\u202E\u2060\u2066-\u2069\uFEFF]/v,
         );
         expect(result).not.toMatch(/[\p{White_Space}--[ ]]| {2}|^ | $/v);
+      }),
+    );
+  });
+
+  it('changes text without whitespace or removed characters only by NFC', () => {
+    fc.assert(
+      fc.property(word, (value) => {
+        expect(normalizeName(value)).toBe(value.normalize('NFC'));
       }),
     );
   });

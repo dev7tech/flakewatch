@@ -10,6 +10,13 @@ fc.configureGlobal({ seed: 20261019 });
 
 type Pair = [suite: string, name: string];
 
+/** Removed although they are neither control nor bidirectional characters. */
+const INVISIBLE: [string, string][] = [
+  ['U+200B zero width space', '\u200B'],
+  ['U+2060 word joiner', '\u2060'],
+  ['U+FEFF zero width no-break space (byte-order mark)', '\uFEFF'],
+];
+
 function hashOf(suite: string, name: string): string {
   const result = createTestIdentity({ suite, name });
   if (!result.ok) {
@@ -81,6 +88,11 @@ describe('createTestIdentity', () => {
       ['Cart\u200F', 'is\u202EAdmin\u2069'],
     ],
     [
+      'invisible characters',
+      ['CartSuite', 'applies discount'],
+      ['Cart\u200BSuite', 'applies\uFEFF discount\u2060'],
+    ],
+    [
       'canonical equivalence',
       ['Caf\u00E9', '\u00C5'],
       ['Cafe\u0301', '\u212B'],
@@ -93,10 +105,31 @@ describe('createTestIdentity', () => {
     },
   );
 
+  it.each(INVISIBLE)(
+    'ignores %s in the suite and the name',
+    (_description, invisible) => {
+      expect(
+        hashOf(
+          `Cart${invisible}Suite`,
+          `${invisible}applies ${invisible}discount${invisible}`,
+        ),
+      ).toBe(hashOf('CartSuite', 'applies discount'));
+    },
+  );
+
   it.each<[string, Pair, Pair]>([
     ['case', ['Cart', 'applies discount'], ['cart', 'applies discount']],
     ['compatibility forms', ['', '\uFB01le'], ['', 'file']],
-    ['zero-width spaces', ['', 'ab'], ['', 'a\u200Bb']],
+    [
+      'zero width joiners in emoji',
+      ['', '\u{1F468}\u200D\u{1F469}'],
+      ['', '\u{1F468}\u{1F469}'],
+    ],
+    [
+      'zero width non-joiners',
+      ['', '\u0645\u06CC\u200C\u062E'],
+      ['', '\u0645\u06CC\u062E'],
+    ],
     [
       'pytest parameters',
       ['tests.test_math', 'test_add[1-2]'],
@@ -128,7 +161,10 @@ describe('createTestIdentity', () => {
   it.each([
     ['an empty name', ''],
     ['a whitespace-only name', ' \t\n\u3000'],
-    ['a name of removed characters only', '\u0000\u202E\u200F'],
+    [
+      'a name of removed characters only',
+      '\u0000\u202E\u200F\u200B\u2060\uFEFF',
+    ],
   ])('rejects %s', (_description, name) => {
     expect(reasonOf('Suite', name)).toBe('missing_name');
   });
@@ -175,7 +211,17 @@ describe('createTestIdentity', () => {
 
   const trickyName = fc.string({
     unit: fc.oneof(
-      fc.constantFrom(' ', '\t', '\u0000', '\u202E', 'e', '\u0301', '\uD800'),
+      fc.constantFrom(
+        ' ',
+        '\t',
+        '\u0000',
+        '\u202E',
+        '\u200B',
+        '\u200D',
+        'e',
+        '\u0301',
+        '\uD800',
+      ),
       fc.string({ unit: 'binary', minLength: 1, maxLength: 1 }),
     ),
     maxLength: 20,
