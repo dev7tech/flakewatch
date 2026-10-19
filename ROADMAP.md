@@ -97,7 +97,7 @@ against what test runners actually emit, not against assumptions.
     dependencies need no rule: pnpm's isolated layout makes them unresolvable.)
   - Prettier for code and configuration files (Markdown excluded).
   - Root `lint`, `format` and `format:check` scripts.
-- [ ] **M1.4 `packages/core` with test identity** — FR-30, §5.1
+- [x] **M1.4 `packages/core` with test identity** — FR-30, §5.1
   - Create the package (source-consumed exports, root Vitest config with coverage, root
     `typecheck` script) together with its first real module: normalization v1 and the
     identity hash.

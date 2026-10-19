@@ -106,7 +106,7 @@ flakewatch/
 ├── pnpm-lock.yaml                                                                      # M1
 ├── pnpm-workspace.yaml                                                                 # M1
 ├── tsconfig.base.json                                                                  # M1
-├── vitest.config.ts                  # root config; one Vitest project per package      M1
+├── vitest.config.js                  # root Vitest config: all unit tests, coverage     M1
 ├── .env.example                      # every server setting, placeholders only          M2
 ├── docker-compose.dev.yml            # PostgreSQL for development and tests             M2
 ├── Dockerfile                        # single multi-stage image                         M8
@@ -206,8 +206,10 @@ All other packages are `private: true`.
 | Modules | ESM only (`"type": "module"`). TypeScript `strict`, `NodeNext` resolution for Node packages, `Bundler` resolution for `web`. |
 | Type checking | Each package runs `tsc --noEmit` against its own `tsconfig.json`, which extends `tsconfig.base.json`. No project references are needed, because internal packages are consumed as source. TypeScript is pinned to 6.0.x, because typescript-eslint's type-aware rules do not support TypeScript 7 yet. |
 | Linting and formatting | ESLint (`eslint.config.js`) checks correctness, not style. Prettier formats code and configuration files; Markdown is excluded, because Prettier's table padding would rewrite whole tables on every edit. |
-| Package scripts | Every package uses the same script names where they apply: `dev`, `build`, `test`, `lint`, `typecheck`. The root scripts run them across the workspace with `pnpm -r`. |
-| Unit tests | Colocated as `*.test.ts` next to the code under test. |
+| Scripts | Linting, formatting and unit tests run once from the root, across the whole workspace (`pnpm lint`, `pnpm format:check`, `pnpm test`, `pnpm test:coverage`). Packages define only scripts that are specific to them, such as `typecheck` (run by the root with `pnpm -r typecheck`), and later `dev` and `build`. |
+| Root configuration files | JavaScript (`eslint.config.js`, `vitest.config.js`). A TypeScript file at the root would belong to no package `tsconfig.json`, which type-aware linting requires. |
+| Unit tests | Colocated as `*.test.ts` next to the code under test. Property-based tests (fast-check) use a fixed seed, so every run is deterministic. |
+| Special characters in code | Invisible, bidirectional, irregular-whitespace and combining characters, and any character whose Unicode form matters to a test, are written as Unicode escape sequences, never literally. ESLint rejects literal invisible and bidirectional characters (a Trojan Source defense). |
 | Integration tests | `apps/server/test/integration/`. Each test file gets its own cloned database. |
 | E2E tests | `e2e/`. |
 | Fixtures | Read through a small helper that resolves paths from the repository root. `.gitattributes` marks `fixtures/**` as `-text`, so Windows checkouts never change their bytes. |

@@ -226,15 +226,26 @@ different environments, they are not used as evidence.**
 
 - **Source fields.** `suite` is `testcase@classname`; if absent, the name of the nearest
   enclosing `testsuite`; if that is absent too, the empty string. `name` is
-  `testcase@name`. Entries without a name are skipped with a warning. Entries whose suite
-  or name is longer than 4,096 characters are skipped with a warning, so identities are
-  never computed from truncated strings.
-- **Normalization (version 1).** Unicode NFC; remove control characters (Unicode
-  category Cc) and bidirectional formatting characters (U+061C, U+200E, U+200F,
-  U+202A–U+202E, U+2066–U+2069); collapse runs of whitespace to one space; trim. Case is
-  preserved.
-- **Identity hash** = SHA-256 of `"v1\0" + suite + "\0" + name`. The CLI and server call
-  the same function, so `check` matches the server's quarantine list exactly.
+  `testcase@name`. Entries skipped with a warning:
+  - a name that is empty after normalization;
+  - a normalized suite or name longer than 4,096 code points. Identities are never
+    computed from truncated strings.
+- **Normalization (version 1)**, applied in this order:
+  1. Replace unpaired UTF-16 surrogates with U+FFFD.
+  2. Remove control characters (Unicode category Cc) that are not whitespace, and the
+     bidirectional formatting characters U+061C, U+200E, U+200F, U+202A–U+202E and
+     U+2066–U+2069.
+  3. Replace each run of whitespace (Unicode White_Space, which includes tab, line breaks
+     and no-break space) with one space, and trim spaces at both ends.
+  4. Apply Unicode NFC. This runs last, because step 2 can bring a base character and a
+     combining mark together.
+
+  Case and all other characters are preserved, including zero-width spaces, joiners and
+  byte-order marks.
+- **Identity hash** = SHA-256 over the UTF-8 encoding of `"v1\0" + suite + "\0" + name`,
+  as lowercase hexadecimal. Normalized names never contain NUL, so the encoding is
+  unambiguous. The CLI and server call the same function, so `check` matches the server's
+  quarantine list exactly.
 - **Display values** are stored truncated to 500 characters. The hash is always computed
   from the full normalized value, which is discarded after hashing (§9.2, memory).
 - **File path** (`testcase@file`, otherwise `testsuite@file`) is display-only: backslashes
