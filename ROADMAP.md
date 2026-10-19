@@ -85,19 +85,22 @@ against what test runners actually emit, not against assumptions.
 **Creates:** root tooling, `packages/core`, `fixtures/`, `docs/reporters.md`,
 `CONTRIBUTING.md`, `LICENSE`.
 
-- [ ] **M1.1 Workspace scaffold**
-  - Root `package.json` (private, `engines.node >= 22`, pinned `packageManager`),
-    `pnpm-workspace.yaml`, strict `tsconfig.base.json`.
+- [x] **M1.1 Workspace scaffold**
+  - Root `package.json` (private, supported Node.js range in `engines`, pinned
+    `packageManager`), `pnpm-workspace.yaml`, strict `tsconfig.base.json`.
   - `.nvmrc`, `.editorconfig`, `.gitignore`, `.gitattributes` (byte-exact `fixtures/**`).
-- [ ] **M1.2 License**
+- [x] **M1.2 License**
   - Add the MIT `LICENSE` and reference it from the README.
-- [ ] **M1.3 Linting and formatting**
-  - ESLint flat config (typescript-eslint strict type-checked rules, import rules including
-    `no-extraneous-dependencies`) and Prettier.
-  - Root `lint`, `format` and `typecheck` scripts.
+- [x] **M1.3 Linting and formatting**
+  - ESLint flat config: typescript-eslint strict type-checked rules, plus `eslint-plugin-n`
+    for `node:` imports and deprecated or engine-unsupported Node.js APIs. (Undeclared
+    dependencies need no rule: pnpm's isolated layout makes them unresolvable.)
+  - Prettier for code and configuration files (Markdown excluded).
+  - Root `lint`, `format` and `format:check` scripts.
 - [ ] **M1.4 `packages/core` with test identity** — FR-30, §5.1
-  - Create the package (source-consumed exports, root Vitest config with coverage) together
-    with its first real module: normalization v1 and the identity hash.
+  - Create the package (source-consumed exports, root Vitest config with coverage, root
+    `typecheck` script) together with its first real module: normalization v1 and the
+    identity hash.
   - fast-check property tests: idempotence, whitespace invariance, control and bidi
     character removal.
 - [ ] **M1.5 CI workflow** — spec §8.3

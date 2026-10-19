@@ -99,6 +99,7 @@ flakewatch/
 ├── .gitattributes                    # byte-exact fixtures                              M1
 ├── .gitignore                                                                          # M1
 ├── .nvmrc                            # Node.js Active LTS used for development           M1
+├── .prettierignore                    # fixtures, lockfile, Markdown                     M1
 ├── .prettierrc.json                                                                    # M1
 ├── eslint.config.js                                                                    # M1
 ├── package.json                      # private root: workspace scripts and tooling only M1
@@ -203,7 +204,8 @@ All other packages are `private: true`.
 | Topic | Convention |
 |---|---|
 | Modules | ESM only (`"type": "module"`). TypeScript `strict`, `NodeNext` resolution for Node packages, `Bundler` resolution for `web`. |
-| Type checking | Each package runs `tsc --noEmit` against its own `tsconfig.json`, which extends `tsconfig.base.json`. No project references are needed, because internal packages are consumed as source. |
+| Type checking | Each package runs `tsc --noEmit` against its own `tsconfig.json`, which extends `tsconfig.base.json`. No project references are needed, because internal packages are consumed as source. TypeScript is pinned to 6.0.x, because typescript-eslint's type-aware rules do not support TypeScript 7 yet. |
+| Linting and formatting | ESLint (`eslint.config.js`) checks correctness, not style. Prettier formats code and configuration files; Markdown is excluded, because Prettier's table padding would rewrite whole tables on every edit. |
 | Package scripts | Every package uses the same script names where they apply: `dev`, `build`, `test`, `lint`, `typecheck`. The root scripts run them across the workspace with `pnpm -r`. |
 | Unit tests | Colocated as `*.test.ts` next to the code under test. |
 | Integration tests | `apps/server/test/integration/`. Each test file gets its own cloned database. |

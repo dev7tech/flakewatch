@@ -1,0 +1,9 @@
+# Byte-exact test inputs written for other toolchains.
+fixtures/
+
+# Generated and owned by pnpm.
+pnpm-lock.yaml
+
+# Hand-wrapped prose. Prettier pads every table column, so editing one cell would
+# rewrite the whole table.
+*.md

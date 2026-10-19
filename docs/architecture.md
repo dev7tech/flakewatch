@@ -143,8 +143,9 @@ flowchart BT
   maintain (ADR-12).
 - `web` depends only on `contracts`, so parser code and Node.js built-ins never reach the
   browser bundle.
-- Allowed imports are exactly the `package.json` dependencies, enforced by ESLint
-  (`import/no-extraneous-dependencies`).
+- Allowed imports are exactly the `package.json` dependencies. pnpm's isolated
+  `node_modules` layout enforces this: an undeclared package cannot be resolved, so type
+  checking fails. Only the root's tooling dependencies are visible to every package.
 - Internal packages export TypeScript source (`"exports": "./src/index.ts"`), so there is
   no per-package build step. The server and CLI are bundled with tsup, inlining
   `@flakewatch/*` and third-party dependencies. The published CLI therefore has zero
@@ -1599,9 +1600,12 @@ flowchart LR
 
 ## 20. Local development
 
-- **Prerequisites:** Node.js (development uses the Active LTS version pinned in `.nvmrc`;
-  `engines` allows 22 or newer, the oldest supported version), pnpm through Corepack, and
-  Docker.
+- **Prerequisites:**
+  - Node.js. Development uses the Active LTS version pinned in `.nvmrc`. The root
+    `engines` field gives the oldest versions the development tooling supports. The
+    published CLI declares its own minimum for users (spec §8.5).
+  - pnpm, through Corepack.
+  - Docker.
 - `docker compose -f docker-compose.dev.yml up` starts PostgreSQL, the only container
   needed for development.
 - `pnpm dev` runs the API (tsx watch), the worker, Vite and the **mock GitHub** together.

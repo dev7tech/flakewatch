@@ -43,5 +43,4 @@ TypeScript, Node.js, Fastify, React, PostgreSQL, Docker, GitHub Actions.
 
 ## License
 
-Flakewatch will be released under the MIT License. The license file is added in roadmap
-task M1.2.
+Flakewatch is open source under the [MIT License](LICENSE).

@@ -1,0 +1,8 @@
+node_modules/
+dist/
+coverage/
+
+# Local configuration may contain secrets; only the placeholder example is tracked.
+.env
+.env.*
+!.env.example
